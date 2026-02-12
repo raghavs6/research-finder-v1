@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { fetchDiscovery, fetchInstitutions } from "./api/client";
 import { DiscoveryForm } from "./components/DiscoveryForm";
@@ -22,6 +22,11 @@ function App() {
   const [isLoadingInstitutions, setIsLoadingInstitutions] = useState(false);
   const [isLoadingDiscovery, setIsLoadingDiscovery] = useState(false);
   const [error, setError] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
 
   const runInstitutionSearch = async () => {
     setError("");
@@ -78,7 +83,16 @@ function App() {
   return (
     <main className="app-shell">
       <header className="hero">
-        <p className="eyebrow">Research Cold Emailer</p>
+        <div className="hero-top">
+          <p className="eyebrow">Research Cold Emailer</p>
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() => setIsDarkMode((prev) => !prev)}
+          >
+            {isDarkMode ? "Light mode" : "Dark mode"}
+          </button>
+        </div>
         <h1>Find Professors Aligned With Your Topic</h1>
         <p className="subtitle">Pick a university, search your field, and review ranked researchers with supporting papers.</p>
       </header>
