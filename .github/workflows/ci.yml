@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  backend-test:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,3 +27,26 @@ jobs:
 
       - name: Run tests
         run: pytest -q
+
+  frontend-test-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run frontend tests
+        run: npm run test
+
+      - name: Build frontend
+        run: npm run build

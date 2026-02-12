@@ -4,6 +4,10 @@ from dataclasses import dataclass, field
 @dataclass(frozen=True)
 class Settings:
     api_v1_prefix: str = "/api/v1"
+    cors_allowed_origins: tuple[str, ...] = (
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    )
     openalex_base_url: str = "https://api.openalex.org"
     openalex_timeout_seconds: float = 5.0
     openalex_max_retries: int = 2

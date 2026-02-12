@@ -78,6 +78,27 @@ class FailingDiscoveryClient:
         raise OpenAlexUpstreamError("down")
 
 
+class NullPrimaryLocationDiscoveryClient:
+    async def search_works_by_topic_and_institution(self, topic: str, institution_id: str) -> dict:
+        return {
+            "results": [
+                {
+                    "id": "https://openalex.org/W9",
+                    "display_name": "Machine Learning Survey",
+                    "publication_year": 2024,
+                    "primary_location": None,
+                    "abstract_inverted_index": {"machine": [0], "learning": [1]},
+                    "authorships": [
+                        {
+                            "author": {"id": "https://openalex.org/A9", "display_name": "Dana Lee"},
+                            "institutions": [{"id": institution_id, "display_name": "MIT"}],
+                        }
+                    ],
+                }
+            ]
+        }
+
+
 def test_discovery_happy_path(client):
     app.dependency_overrides[get_openalex_client] = lambda: FakeDiscoveryClient()
 
@@ -120,3 +141,18 @@ def test_discovery_upstream_error_maps_to_502(client):
 
     assert response.status_code == 502
     assert response.json()["detail"] == "OpenAlex unavailable"
+
+
+def test_discovery_handles_null_primary_location_without_500(client):
+    app.dependency_overrides[get_openalex_client] = lambda: NullPrimaryLocationDiscoveryClient()
+
+    response = client.get(
+        "/api/v1/discovery",
+        params={"topic": "machine learning", "institution_id": "https://openalex.org/I1"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["results"][0]["author_name"] == "Dana Lee"
+    assert payload["results"][0]["top_works"][0]["venue"] is None

@@ -81,14 +81,22 @@ def rank_authors(
     current_year = dt.datetime.utcnow().year
 
     for work in results:
+        if not isinstance(work, dict):
+            continue
+
         title = work.get("display_name") or "Untitled"
         publication_year = work.get("publication_year")
         abstract = reconstruct_abstract(work.get("abstract_inverted_index"))
-        venue = (
-            work.get("primary_location", {})
-            .get("source", {})
-            .get("display_name")
-        )
+        primary_location = work.get("primary_location")
+        if not isinstance(primary_location, dict):
+            primary_location = {}
+
+        source = primary_location.get("source")
+        if not isinstance(source, dict):
+            source = {}
+
+        venue_value = source.get("display_name")
+        venue = venue_value if isinstance(venue_value, str) else None
 
         relevance = relevance_score(topic, title, abstract)
         if relevance <= 0:
@@ -107,16 +115,29 @@ def rank_authors(
             openalex_url=work.get("id"),
         )
 
-        for authorship in work.get("authorships", []):
-            author = authorship.get("author", {})
+        authorships = work.get("authorships")
+        if not isinstance(authorships, list):
+            authorships = []
+
+        for authorship in authorships:
+            if not isinstance(authorship, dict):
+                continue
+
+            author = authorship.get("author")
+            if not isinstance(author, dict):
+                continue
+
             author_id = author.get("id")
             author_name = author.get("display_name")
             if not author_id or not author_name:
                 continue
 
-            institutions = authorship.get("institutions", [])
+            institutions = authorship.get("institutions")
+            if not isinstance(institutions, list):
+                institutions = []
+
             matches_institution = any(
-                _normalize_openalex_id(inst.get("id")) == normalized_institution_id
+                isinstance(inst, dict) and _normalize_openalex_id(inst.get("id")) == normalized_institution_id
                 for inst in institutions
             )
             if not matches_institution:
