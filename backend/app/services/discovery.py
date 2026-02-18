@@ -1,44 +1,14 @@
 import datetime as dt
-import re
 from dataclasses import dataclass, field
 
-from app.core.config import settings
+from app.core.config import AREA_VENUE_KEYWORDS, settings
 from app.models.schemas import DiscoveryAuthorResult, WorkItem
-
-
-_TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
-
-
-def _normalize_tokens(text: str) -> set[str]:
-    return set(_TOKEN_PATTERN.findall(text.lower()))
 
 
 def _normalize_openalex_id(identifier: str | None) -> str:
     if not identifier:
         return ""
     return identifier.rsplit("/", maxsplit=1)[-1]
-
-
-def reconstruct_abstract(abstract_inverted_index: dict | None) -> str:
-    if not abstract_inverted_index:
-        return ""
-
-    positions: dict[int, str] = {}
-    for word, indices in abstract_inverted_index.items():
-        for idx in indices:
-            positions[idx] = word
-
-    return " ".join(token for _, token in sorted(positions.items(), key=lambda item: item[0]))
-
-
-def relevance_score(topic: str, title: str, abstract: str) -> float:
-    topic_tokens = _normalize_tokens(topic)
-    if not topic_tokens:
-        return 0.0
-
-    work_tokens = _normalize_tokens(f"{title} {abstract}")
-    overlap = topic_tokens.intersection(work_tokens)
-    return len(overlap) / len(topic_tokens)
 
 
 def recency_score(publication_year: int | None) -> float:
@@ -50,11 +20,11 @@ def recency_score(publication_year: int | None) -> float:
     return 1.0 / (1.0 + age_years)
 
 
-def _is_top_venue(venue: str | None) -> bool:
-    if not venue:
+def _venue_matches_area(venue: str | None, keywords: tuple[str, ...]) -> bool:
+    if not venue or not keywords:
         return False
     normalized = venue.strip().lower()
-    return normalized in set(settings.top_venues)
+    return any(kw in normalized for kw in keywords)
 
 
 @dataclass
@@ -70,10 +40,11 @@ class AuthorAccumulator:
 
 
 def rank_authors(
-    topic: str,
+    area: str,
     institution_id: str,
     works_payload: dict,
 ) -> list[DiscoveryAuthorResult]:
+    keywords = AREA_VENUE_KEYWORDS.get(area, ())
     results = works_payload.get("results", [])
     accumulators: dict[str, AuthorAccumulator] = {}
     normalized_institution_id = _normalize_openalex_id(institution_id)
@@ -86,7 +57,6 @@ def rank_authors(
 
         title = work.get("display_name") or "Untitled"
         publication_year = work.get("publication_year")
-        abstract = reconstruct_abstract(work.get("abstract_inverted_index"))
         primary_location = work.get("primary_location")
         if not isinstance(primary_location, dict):
             primary_location = {}
@@ -98,14 +68,11 @@ def rank_authors(
         venue_value = source.get("display_name")
         venue = venue_value if isinstance(venue_value, str) else None
 
-        relevance = relevance_score(topic, title, abstract)
-        if relevance <= 0:
+        if not _venue_matches_area(venue, keywords):
             continue
 
         recency = recency_score(publication_year)
-        base_contribution = relevance * recency
-        venue_bonus = 0.25 if _is_top_venue(venue) else 0.0
-        contribution = base_contribution + venue_bonus
+        contribution = recency
 
         work_item = WorkItem(
             work_id=work.get("id", ""),
@@ -162,10 +129,9 @@ def rank_authors(
 
             accumulator.score += contribution
             accumulator.matching_works_count += 1
+            accumulator.top_venue_works_count += 1
             if publication_year is not None and current_year - publication_year <= settings.recency_window_years:
                 accumulator.recent_works_count += 1
-            if venue_bonus > 0:
-                accumulator.top_venue_works_count += 1
             accumulator.top_works.append((contribution, work_item))
 
     ranked = sorted(

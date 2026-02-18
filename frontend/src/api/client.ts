@@ -1,4 +1,4 @@
-import type { DiscoveryResponse, InstitutionSearchResponse } from "../types/api";
+import type { AreasResponse, DiscoveryResponse, InstitutionSearchResponse } from "../types/api";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
@@ -41,14 +41,19 @@ export async function fetchInstitutions(
   return parseResponse<InstitutionSearchResponse>(response);
 }
 
+export async function fetchAreas(): Promise<AreasResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/areas`);
+  return parseResponse<AreasResponse>(response);
+}
+
 export async function fetchDiscovery(params: {
-  topic: string;
+  area: string;
   institutionId: string;
   offset?: number;
   limit?: number;
 }): Promise<DiscoveryResponse> {
   const query = new URLSearchParams({
-    topic: params.topic,
+    area: params.area,
     institution_id: params.institutionId,
     offset: String(params.offset ?? 0),
     limit: String(params.limit ?? 10)

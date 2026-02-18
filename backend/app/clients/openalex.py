@@ -74,6 +74,22 @@ class OpenAlexClient:
         )
         return payload
 
+    async def search_works_by_institution(
+        self,
+        institution_id: str,
+        per_page: int = 200,
+    ) -> dict:
+        """Fetch recent works at an institution with no topic filter (for area-based ranking)."""
+        safe_per_page = max(1, min(per_page, settings.openalex_max_per_page))
+        normalized_id = institution_id.rsplit("/", maxsplit=1)[-1]
+        params = {
+            "filter": f"institutions.id:{normalized_id}",
+            "sort": "publication_date:desc",
+            "per_page": safe_per_page,
+            "select": "id,display_name,publication_year,primary_location,authorships",
+        }
+        return await self._request("/works", params=params)
+
 
 def get_openalex_client() -> OpenAlexClient:
     return OpenAlexClient()

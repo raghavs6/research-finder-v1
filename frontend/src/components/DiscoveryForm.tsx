@@ -1,38 +1,52 @@
+import type { AreaItem } from "../types/api";
+
 type DiscoveryFormProps = {
-  topic: string;
-  onTopicChange: (value: string) => void;
+  area: string;
+  onAreaChange: (value: string) => void;
+  areas: AreaItem[];
   onSearch: () => void;
   isLoading: boolean;
   hasInstitutionSelected: boolean;
 };
 
 export function DiscoveryForm({
-  topic,
-  onTopicChange,
+  area,
+  onAreaChange,
+  areas,
   onSearch,
   isLoading,
   hasInstitutionSelected
 }: DiscoveryFormProps) {
-  const disabled = isLoading || topic.trim().length < 2 || !hasInstitutionSelected;
+  const disabled = isLoading || area === "" || !hasInstitutionSelected;
+  const selectedArea = areas.find((a) => a.name === area);
 
   return (
     <section className="panel">
       <div className="step-label">
-        <span className="step-num">002</span> // TOPIC
+        <span className="step-num">002</span> // AREA
       </div>
       <h2>Find Professors</h2>
       <div className="form-row">
-        <input
-          value={topic}
-          onChange={(event) => onTopicChange(event.target.value)}
-          placeholder="Research topic, e.g. machine learning"
-          aria-label="Research topic"
-        />
+        <select
+          value={area}
+          onChange={(e) => onAreaChange(e.target.value)}
+          disabled={!hasInstitutionSelected}
+          aria-label="Research area"
+        >
+          <option value="">-- select research area --</option>
+          {areas.map((a) => (
+            <option key={a.name} value={a.name}>{a.name}</option>
+          ))}
+        </select>
         <button type="button" onClick={onSearch} disabled={disabled}>
           {isLoading ? "Loading..." : "Discover"}
         </button>
       </div>
-      {!hasInstitutionSelected ? <p className="helper-text">Select an institution first.</p> : null}
+      {!hasInstitutionSelected ? (
+        <p className="helper-text">Select an institution first.</p>
+      ) : selectedArea ? (
+        <p className="helper-text">covering: {selectedArea.conferences.join(", ")}</p>
+      ) : null}
     </section>
   );
 }

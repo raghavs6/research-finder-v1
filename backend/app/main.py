@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.areas import router as areas_router
 from app.api.v1.discovery import router as discovery_router
 from app.api.v1.health import router as health_router
 from app.api.v1.institutions import router as institutions_router
@@ -19,6 +20,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router, prefix=settings.api_v1_prefix)
     app.include_router(institutions_router, prefix=settings.api_v1_prefix)
+    app.include_router(areas_router, prefix=settings.api_v1_prefix)
     app.include_router(discovery_router, prefix=settings.api_v1_prefix)
 
     return app

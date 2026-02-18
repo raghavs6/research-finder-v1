@@ -1,20 +1,21 @@
 import { useEffect, useState } from "react";
 
-import { fetchDiscovery, fetchInstitutions } from "./api/client";
+import { fetchAreas, fetchDiscovery, fetchInstitutions } from "./api/client";
 import { DiscoveryForm } from "./components/DiscoveryForm";
 import { ErrorBanner } from "./components/ErrorBanner";
 import { InstitutionSearch } from "./components/InstitutionSearch";
 import { ProfessorResults } from "./components/ProfessorResults";
-import type { DiscoveryAuthorResult, InstitutionItem } from "./types/api";
+import type { AreaItem, DiscoveryAuthorResult, InstitutionItem } from "./types/api";
 
 const PAGE_SIZE = 5;
 
 function App() {
   const [institutionQuery, setInstitutionQuery] = useState("");
-  const [topic, setTopic] = useState("");
+  const [area, setArea] = useState("");
   const [selectedInstitutionId, setSelectedInstitutionId] = useState("");
 
   const [institutions, setInstitutions] = useState<InstitutionItem[]>([]);
+  const [areas, setAreas] = useState<AreaItem[]>([]);
   const [results, setResults] = useState<DiscoveryAuthorResult[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -27,6 +28,12 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", isDarkMode ? "dark" : "light");
   }, [isDarkMode]);
+
+  useEffect(() => {
+    fetchAreas()
+      .then((payload) => setAreas(payload.areas))
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load research areas"));
+  }, []);
 
   const runInstitutionSearch = async () => {
     setError("");
@@ -45,7 +52,7 @@ function App() {
   };
 
   const runDiscoverySearch = async (nextOffset = 0) => {
-    if (!selectedInstitutionId || topic.trim().length < 2) {
+    if (!selectedInstitutionId || area.trim().length === 0) {
       return;
     }
 
@@ -53,7 +60,7 @@ function App() {
     setIsLoadingDiscovery(true);
     try {
       const payload = await fetchDiscovery({
-        topic: topic.trim(),
+        area: area.trim(),
         institutionId: selectedInstitutionId,
         offset: nextOffset,
         limit: PAGE_SIZE
@@ -94,7 +101,7 @@ function App() {
           </button>
         </div>
         <h1>RESEARCH.FIND</h1>
-        <p className="subtitle">pick a university. search your field. review ranked researchers.</p>
+        <p className="subtitle">pick a university. pick your field. review ranked researchers.</p>
       </header>
 
       {error ? <ErrorBanner message={error} /> : null}
@@ -110,8 +117,9 @@ function App() {
       />
 
       <DiscoveryForm
-        topic={topic}
-        onTopicChange={setTopic}
+        area={area}
+        onAreaChange={setArea}
+        areas={areas}
         onSearch={() => void runDiscoverySearch(0)}
         isLoading={isLoadingDiscovery}
         hasInstitutionSelected={Boolean(selectedInstitutionId)}

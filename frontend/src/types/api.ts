@@ -13,6 +13,15 @@ export type InstitutionSearchResponse = {
   results: InstitutionItem[];
 };
 
+export type AreaItem = {
+  name: string;
+  conferences: string[];
+};
+
+export type AreasResponse = {
+  areas: AreaItem[];
+};
+
 export type WorkItem = {
   work_id: string;
   title: string;
@@ -33,7 +42,7 @@ export type DiscoveryAuthorResult = {
 };
 
 export type DiscoveryResponse = {
-  query: string;
+  area: string;
   institution_id: string;
   offset: number;
   limit: number;

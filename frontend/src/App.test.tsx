@@ -5,17 +5,25 @@ import App from "./App";
 
 vi.mock("./api/client", () => ({
   fetchInstitutions: vi.fn(),
+  fetchAreas: vi.fn(),
   fetchDiscovery: vi.fn()
 }));
 
-import { fetchDiscovery, fetchInstitutions } from "./api/client";
+import { fetchAreas, fetchDiscovery, fetchInstitutions } from "./api/client";
 
 const mockedFetchInstitutions = vi.mocked(fetchInstitutions);
+const mockedFetchAreas = vi.mocked(fetchAreas);
 const mockedFetchDiscovery = vi.mocked(fetchDiscovery);
 
 describe("App", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedFetchAreas.mockResolvedValue({
+      areas: [
+        { name: "Machine Learning", conferences: ["NeurIPS", "ICML", "ICLR", "COLT"] },
+        { name: "Computer Vision", conferences: ["CVPR", "ICCV", "ECCV"] }
+      ]
+    });
   });
 
   it("runs institution search and discovery flow", async () => {
@@ -35,7 +43,7 @@ describe("App", () => {
     });
 
     mockedFetchDiscovery.mockResolvedValue({
-      query: "machine learning",
+      area: "Machine Learning",
       institution_id: "https://openalex.org/I1",
       offset: 0,
       limit: 5,
@@ -48,13 +56,13 @@ describe("App", () => {
           score: 2.1,
           matching_works_count: 2,
           recent_works_count: 2,
-          top_venue_works_count: 1,
+          top_venue_works_count: 2,
           top_works: [
             {
               work_id: "https://openalex.org/W1",
               title: "Machine Learning for Healthcare",
               publication_year: 2025,
-              venue: "neurips",
+              venue: "NeurIPS 2025",
               openalex_url: "https://openalex.org/W1"
             }
           ]
@@ -64,13 +72,16 @@ describe("App", () => {
 
     render(<App />);
 
+    // Areas are fetched on mount
+    await waitFor(() => expect(mockedFetchAreas).toHaveBeenCalled());
+
     fireEvent.change(screen.getByLabelText("Institution query"), { target: { value: "mit" } });
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
     await waitFor(() => expect(mockedFetchInstitutions).toHaveBeenCalled());
 
     fireEvent.click(screen.getByRole("button", { name: /MIT/i }));
-    fireEvent.change(screen.getByLabelText("Research topic"), { target: { value: "machine learning" } });
+    fireEvent.change(screen.getByLabelText("Research area"), { target: { value: "Machine Learning" } });
     fireEvent.click(screen.getByRole("button", { name: "Discover" }));
 
     await waitFor(() => expect(mockedFetchDiscovery).toHaveBeenCalled());

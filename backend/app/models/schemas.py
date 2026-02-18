@@ -22,6 +22,15 @@ class InstitutionSearchResponse(BaseModel):
     results: list[InstitutionItem]
 
 
+class AreaItem(BaseModel):
+    name: str
+    conferences: list[str]
+
+
+class AreasResponse(BaseModel):
+    areas: list[AreaItem]
+
+
 class WorkItem(BaseModel):
     work_id: str
     title: str
@@ -42,7 +51,7 @@ class DiscoveryAuthorResult(BaseModel):
 
 
 class DiscoveryResponse(BaseModel):
-    query: str
+    area: str
     institution_id: str
     offset: int
     limit: int

@@ -1,20 +1,25 @@
-from app.services.discovery import rank_authors, recency_score, relevance_score, reconstruct_abstract
-
-
-def test_reconstruct_abstract():
-    inverted = {"machine": [0], "learning": [1], "applications": [2]}
-    assert reconstruct_abstract(inverted) == "machine learning applications"
-
-
-def test_relevance_score_overlap_ratio():
-    score = relevance_score("machine learning", "Machine Learning Methods", "useful methods")
-    assert score == 1.0
+from app.services.discovery import rank_authors, recency_score, _venue_matches_area
 
 
 def test_recency_score_monotonic():
     newer = recency_score(2025)
     older = recency_score(2020)
     assert newer > older
+
+
+def test_venue_matches_area_substring():
+    # Full name match
+    assert _venue_matches_area("Neural Information Processing Systems", ("neurips", "neural information processing"))
+    # Abbreviation match
+    assert _venue_matches_area("NeurIPS 2024", ("neurips", "neural information processing"))
+    # ICML match
+    assert _venue_matches_area("ICML", ("icml", "international conference on machine learning"))
+
+
+def test_venue_matches_area_returns_false_for_nonmatch():
+    assert not _venue_matches_area("SIGGRAPH", ("neurips", "icml", "iclr"))
+    assert not _venue_matches_area(None, ("neurips", "icml"))
+    assert not _venue_matches_area("CVPR", ())
 
 
 def test_rank_authors_deterministic_tiebreak():
@@ -24,8 +29,7 @@ def test_rank_authors_deterministic_tiebreak():
                 "id": "https://openalex.org/W1",
                 "display_name": "Machine Learning Foundations",
                 "publication_year": 2024,
-                "primary_location": {"source": {"display_name": "neurips"}},
-                "abstract_inverted_index": {"machine": [0], "learning": [1]},
+                "primary_location": {"source": {"display_name": "NeurIPS 2024"}},
                 "authorships": [
                     {
                         "author": {"id": "https://openalex.org/A1", "display_name": "Alice"},
@@ -40,7 +44,7 @@ def test_rank_authors_deterministic_tiebreak():
         ]
     }
 
-    ranked = rank_authors("machine learning", "https://openalex.org/I1", payload)
+    ranked = rank_authors("Machine Learning", "https://openalex.org/I1", payload)
 
     assert len(ranked) == 2
     assert ranked[0].author_name == "Alice"
@@ -48,15 +52,14 @@ def test_rank_authors_deterministic_tiebreak():
     assert ranked[0].score == ranked[1].score
 
 
-def test_rank_authors_handles_null_primary_location():
+def test_rank_authors_excludes_non_venue_papers():
     payload = {
         "results": [
             {
                 "id": "https://openalex.org/W1",
-                "display_name": "Machine Learning Foundations",
+                "display_name": "Computer Graphics Paper",
                 "publication_year": 2024,
-                "primary_location": None,
-                "abstract_inverted_index": {"machine": [0], "learning": [1]},
+                "primary_location": {"source": {"display_name": "SIGGRAPH"}},
                 "authorships": [
                     {
                         "author": {"id": "https://openalex.org/A1", "display_name": "Alice"},
@@ -67,11 +70,33 @@ def test_rank_authors_handles_null_primary_location():
         ]
     }
 
-    ranked = rank_authors("machine learning", "https://openalex.org/I1", payload)
+    ranked = rank_authors("Machine Learning", "https://openalex.org/I1", payload)
 
-    assert len(ranked) == 1
-    assert ranked[0].author_name == "Alice"
-    assert ranked[0].top_works[0].venue is None
+    assert len(ranked) == 0
+
+
+def test_rank_authors_null_primary_location_excluded():
+    payload = {
+        "results": [
+            {
+                "id": "https://openalex.org/W1",
+                "display_name": "Machine Learning Foundations",
+                "publication_year": 2024,
+                "primary_location": None,
+                "authorships": [
+                    {
+                        "author": {"id": "https://openalex.org/A1", "display_name": "Alice"},
+                        "institutions": [{"id": "https://openalex.org/I1", "display_name": "MIT"}],
+                    }
+                ],
+            }
+        ]
+    }
+
+    ranked = rank_authors("Machine Learning", "https://openalex.org/I1", payload)
+
+    # Works with no venue don't match any area, so no authors are ranked
+    assert len(ranked) == 0
 
 
 def test_rank_authors_handles_malformed_authorship_entries():
@@ -81,8 +106,7 @@ def test_rank_authors_handles_malformed_authorship_entries():
                 "id": "https://openalex.org/W1",
                 "display_name": "Machine Learning Foundations",
                 "publication_year": 2024,
-                "primary_location": {"source": None},
-                "abstract_inverted_index": {"machine": [0], "learning": [1]},
+                "primary_location": {"source": {"display_name": "ICML 2024"}},
                 "authorships": [
                     {"author": None, "institutions": None},
                     None,
@@ -95,7 +119,7 @@ def test_rank_authors_handles_malformed_authorship_entries():
         ]
     }
 
-    ranked = rank_authors("machine learning", "https://openalex.org/I1", payload)
+    ranked = rank_authors("Machine Learning", "https://openalex.org/I1", payload)
 
     assert len(ranked) == 1
     assert ranked[0].author_name == "Alice"
