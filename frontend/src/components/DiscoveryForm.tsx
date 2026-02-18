@@ -17,7 +17,10 @@ export function DiscoveryForm({
 
   return (
     <section className="panel">
-      <h2>2. Find Professors</h2>
+      <div className="step-label">
+        <span className="step-num">002</span> // TOPIC
+      </div>
+      <h2>Find Professors</h2>
       <div className="form-row">
         <input
           value={topic}

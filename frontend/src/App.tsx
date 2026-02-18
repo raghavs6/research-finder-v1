@@ -22,7 +22,7 @@ function App() {
   const [isLoadingInstitutions, setIsLoadingInstitutions] = useState(false);
   const [isLoadingDiscovery, setIsLoadingDiscovery] = useState(false);
   const [error, setError] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", isDarkMode ? "dark" : "light");
@@ -84,17 +84,17 @@ function App() {
     <main className="app-shell">
       <header className="hero">
         <div className="hero-top">
-          <p className="eyebrow">Research Cold Emailer</p>
+          <p className="eyebrow">// research discovery tool</p>
           <button
             type="button"
             className="theme-toggle"
             onClick={() => setIsDarkMode((prev) => !prev)}
           >
-            {isDarkMode ? "Light mode" : "Dark mode"}
+            {isDarkMode ? "// light" : "// dark"}
           </button>
         </div>
-        <h1>Find Professors Aligned With Your Topic</h1>
-        <p className="subtitle">Pick a university, search your field, and review ranked researchers with supporting papers.</p>
+        <h1>RESEARCH.FIND</h1>
+        <p className="subtitle">pick a university. search your field. review ranked researchers.</p>
       </header>
 
       {error ? <ErrorBanner message={error} /> : null}

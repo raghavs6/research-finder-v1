@@ -21,7 +21,10 @@ export function InstitutionSearch({
 }: InstitutionSearchProps) {
   return (
     <section className="panel">
-      <h2>1. Choose University</h2>
+      <div className="step-label">
+        <span className="step-num">001</span> // INSTITUTION
+      </div>
+      <h2>Choose University</h2>
       <div className="form-row">
         <input
           value={query}
