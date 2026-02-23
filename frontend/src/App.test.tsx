@@ -85,6 +85,59 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Discover" }));
 
     await waitFor(() => expect(mockedFetchDiscovery).toHaveBeenCalled());
+    expect(mockedFetchDiscovery).toHaveBeenCalledWith({
+      area: "Machine Learning",
+      institutionId: "https://openalex.org/I1",
+      offset: 0,
+      limit: 5
+    });
+    expect(screen.getByRole("dialog", { name: "Professor results" })).toBeInTheDocument();
     expect(screen.getByText("Alice Zhang")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Professor results" })).not.toBeInTheDocument();
+    });
+  });
+
+  it("opens modal with empty-state message when discovery has no results", async () => {
+    mockedFetchInstitutions.mockResolvedValue({
+      query: "mit",
+      limit: 10,
+      total: 1,
+      results: [
+        {
+          institution_id: "https://openalex.org/I1",
+          name: "MIT",
+          country_code: "US",
+          works_count: 100,
+          cited_by_count: 1000
+        }
+      ]
+    });
+
+    mockedFetchDiscovery.mockResolvedValue({
+      area: "Machine Learning",
+      institution_id: "https://openalex.org/I1",
+      offset: 0,
+      limit: 5,
+      total: 0,
+      results: []
+    });
+
+    render(<App />);
+
+    await waitFor(() => expect(mockedFetchAreas).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText("Institution query"), { target: { value: "mit" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    await waitFor(() => expect(mockedFetchInstitutions).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: /MIT/i }));
+    fireEvent.change(screen.getByLabelText("Research area"), { target: { value: "Machine Learning" } });
+    fireEvent.click(screen.getByRole("button", { name: "Discover" }));
+
+    await waitFor(() => expect(mockedFetchDiscovery).toHaveBeenCalled());
+    expect(screen.getByRole("dialog", { name: "Professor results" })).toBeInTheDocument();
+    expect(screen.getByText("No professors matched this query yet.")).toBeInTheDocument();
   });
 });

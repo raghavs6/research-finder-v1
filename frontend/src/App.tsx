@@ -18,7 +18,7 @@ function App() {
   const [areas, setAreas] = useState<AreaItem[]>([]);
   const [results, setResults] = useState<DiscoveryAuthorResult[]>([]);
   const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
+  const [isResultsModalOpen, setIsResultsModalOpen] = useState(false);
 
   const [isLoadingInstitutions, setIsLoadingInstitutions] = useState(false);
   const [isLoadingDiscovery, setIsLoadingDiscovery] = useState(false);
@@ -43,6 +43,7 @@ function App() {
       setInstitutions(payload.results);
       if (!payload.results.some((item) => item.institution_id === selectedInstitutionId)) {
         setSelectedInstitutionId("");
+        setIsResultsModalOpen(false);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Institution lookup failed");
@@ -51,7 +52,7 @@ function App() {
     }
   };
 
-  const runDiscoverySearch = async (nextOffset = 0) => {
+  const runDiscoverySearch = async () => {
     if (!selectedInstitutionId || area.trim().length === 0) {
       return;
     }
@@ -62,29 +63,18 @@ function App() {
       const payload = await fetchDiscovery({
         area: area.trim(),
         institutionId: selectedInstitutionId,
-        offset: nextOffset,
+        offset: 0,
         limit: PAGE_SIZE
       });
       setResults(payload.results);
       setTotal(payload.total);
-      setOffset(payload.offset);
+      setIsResultsModalOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Discovery request failed");
+      setIsResultsModalOpen(false);
     } finally {
       setIsLoadingDiscovery(false);
     }
-  };
-
-  const onNext = () => {
-    const nextOffset = offset + PAGE_SIZE;
-    if (nextOffset >= total) return;
-    void runDiscoverySearch(nextOffset);
-  };
-
-  const onPrev = () => {
-    const nextOffset = Math.max(0, offset - PAGE_SIZE);
-    if (nextOffset === offset) return;
-    void runDiscoverySearch(nextOffset);
   };
 
   return (
@@ -112,26 +102,31 @@ function App() {
         onSearch={() => void runInstitutionSearch()}
         institutions={institutions}
         selectedInstitutionId={selectedInstitutionId}
-        onSelectInstitution={setSelectedInstitutionId}
+        onSelectInstitution={(institutionId) => {
+          setSelectedInstitutionId(institutionId);
+          setIsResultsModalOpen(false);
+        }}
         isLoading={isLoadingInstitutions}
       />
 
       <DiscoveryForm
         area={area}
-        onAreaChange={setArea}
+        onAreaChange={(value) => {
+          setArea(value);
+          setIsResultsModalOpen(false);
+        }}
         areas={areas}
-        onSearch={() => void runDiscoverySearch(0)}
+        onSearch={() => void runDiscoverySearch()}
         isLoading={isLoadingDiscovery}
         hasInstitutionSelected={Boolean(selectedInstitutionId)}
       />
 
       <ProfessorResults
+        isOpen={isResultsModalOpen}
+        onClose={() => setIsResultsModalOpen(false)}
         results={results}
         total={total}
-        offset={offset}
-        limit={PAGE_SIZE}
-        onPrev={onPrev}
-        onNext={onNext}
+        isLoading={isLoadingDiscovery}
       />
     </main>
   );

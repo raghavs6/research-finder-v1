@@ -100,6 +100,10 @@ CI:
 - Runs pytest
 - Runs frontend build
 
+Backend local run command:
+- From repo root: `./backend/.venv/bin/python -m uvicorn app.main:app --reload --app-dir backend`
+- Full details: `backend/README.md`
+
 ---
 
 ## 6. Security Principles

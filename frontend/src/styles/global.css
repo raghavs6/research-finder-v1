@@ -271,9 +271,34 @@ a:hover {
   gap: 0.7rem;
 }
 
-.pagination {
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg-main) 68%, #000 32%);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 20;
+}
+
+.modal-dialog {
+  width: min(860px, 96vw);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+.modal-close {
+  background: transparent;
+  color: var(--accent);
+}
+
+.modal-close:hover:not(:disabled) {
+  color: var(--button-ink);
+}
+
+.modal-footer {
   display: flex;
-  gap: 0.6rem;
+  justify-content: flex-end;
   margin-top: 0.75rem;
 }
 
@@ -311,5 +336,10 @@ a:hover {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.3rem;
+  }
+
+  .modal-dialog {
+    width: min(96vw, 640px);
+    max-height: calc(100vh - 1rem);
   }
 }
